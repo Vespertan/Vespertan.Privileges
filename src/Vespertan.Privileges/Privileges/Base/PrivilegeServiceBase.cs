@@ -44,7 +44,7 @@ namespace Vespertan.Privileges
                 .Select(p => p.SubGroupId)
                 .ToList();
 
-            while (groupsToCheck.Count == 0)
+            while (groupsToCheck.Count > 0)
             {
                 TGroupKey id = groupsToCheck[0];
                 dependents.Add(id);

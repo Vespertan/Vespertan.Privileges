@@ -5,11 +5,11 @@ using Vespertan.Utils.Data;
 
 namespace Vespertan.Privileges
 {
-    public class EditablePrivilegesServiceBase<TUserKey, TPrivilegeKey, TGroupKey> 
+    public class EditablePrivilegesServiceBase<TUserKey, TPrivilegeKey, TGroupKey>
         : PrivilegeServiceBase<TUserKey, TPrivilegeKey, TGroupKey>, IEditablePrivilegesService<TUserKey, TPrivilegeKey, TGroupKey>
     {
         public EditablePrivilegesServiceBase(IEnumerable<TPrivilegeKey> privilegeList = null, IEnumerable<TUserKey> userList = null, IEnumerable<TGroupKey> groupList = null,
-            IEnumerable<PrivilegeRelation<TUserKey, TGroupKey>> privilegeRelationList = null, 
+            IEnumerable<PrivilegeRelation<TUserKey, TGroupKey>> privilegeRelationList = null,
             IEnumerable<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>> privilegeGrantList = null)
         {
             if (privilegeList == null)
@@ -99,11 +99,11 @@ namespace Vespertan.Privileges
         }
 
         private bool session = false;
-        private readonly Dictionary<TPrivilegeKey, PrivilegeState> privilegeList;
-        private readonly Dictionary<TUserKey, PrivilegeState> userList;
-        private readonly Dictionary<TGroupKey, PrivilegeState> groupList;
-        private readonly Dictionary<PrivilegeRelation<TUserKey, TGroupKey>, PrivilegeState> privilegeRelationList;
-        private readonly Dictionary<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>, PrivilegeState> privilegeGrantList;
+        private Dictionary<TPrivilegeKey, PrivilegeState> privilegeList;
+        private Dictionary<TUserKey, PrivilegeState> userList;
+        private Dictionary<TGroupKey, PrivilegeState> groupList;
+        private Dictionary<PrivilegeRelation<TUserKey, TGroupKey>, PrivilegeState> privilegeRelationList;
+        private Dictionary<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>, PrivilegeState> privilegeGrantList;
 
         public event EventHandler<TPrivilegeKey> OnPrivilegeAdd;
         public event EventHandler<TPrivilegeKey> OnPrivilegeRemove;
@@ -123,6 +123,100 @@ namespace Vespertan.Privileges
 
         public event EventHandler OnCommitSession;
         public event EventHandler OnRollbackSession;
+
+        public void Reset()
+        {
+            var privilegeList = GetPrivileges();
+            var userList = GetUsers();
+            var groupList = GetGroups();
+            var privilegeRelationList = GetPrivilegeRelations();
+            var privilegeGrantList = GetPrivilegeGrants();
+
+            if (privilegeList == null)
+            {
+                this.privilegeList = new Dictionary<TPrivilegeKey, PrivilegeState>();
+            }
+            else
+            {
+                if (privilegeList.Contains(default))
+                {
+                    throw new NotSupportedException($"{nameof(privilegeList)}: Default values for type {nameof(TPrivilegeKey)} is not supported");
+                }
+                else if (privilegeList.Distinct().Count() != privilegeList.Count())
+                {
+                    throw new NotSupportedException($"{nameof(privilegeList)}: Only distinct values are supported");
+                }
+                this.privilegeList = privilegeList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
+            }
+
+            if (userList == null)
+            {
+                this.userList = new Dictionary<TUserKey, PrivilegeState>();
+            }
+            else
+            {
+                if (userList.Contains(default))
+                {
+                    throw new NotSupportedException($"{nameof(userList)}: Default values for type {nameof(TUserKey)} is not supported");
+                }
+                else if (userList.Distinct().Count() != userList.Count())
+                {
+                    throw new NotSupportedException($"{nameof(userList)}: Only distinct values are supported");
+                }
+                this.userList = userList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
+            }
+
+            if (groupList == null)
+            {
+                this.groupList = new Dictionary<TGroupKey, PrivilegeState>();
+            }
+            else
+            {
+                if (groupList.Contains(default))
+                {
+                    throw new NotSupportedException($"{nameof(groupList)}: Default values for type {nameof(TGroupKey)} is not supported");
+                }
+                else if (groupList.Distinct().Count() != groupList.Count())
+                {
+                    throw new NotSupportedException($"{nameof(groupList)}: Only distinct values are supported");
+                }
+                this.groupList = groupList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
+            }
+
+            if (privilegeRelationList == null)
+            {
+                this.privilegeRelationList = new Dictionary<PrivilegeRelation<TUserKey, TGroupKey>, PrivilegeState>();
+            }
+            else
+            {
+                if (privilegeRelationList.Contains(default))
+                {
+                    throw new NotSupportedException($"{nameof(privilegeRelationList)}: Default values for type {nameof(TGroupKey)} is not supported");
+                }
+                else if (privilegeRelationList.Distinct().Count() != privilegeRelationList.Count())
+                {
+                    throw new NotSupportedException($"{nameof(privilegeRelationList)}: Only distinct values are supported");
+                }
+                this.privilegeRelationList = privilegeRelationList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
+            }
+
+            if (privilegeGrantList == null)
+            {
+                this.privilegeGrantList = new Dictionary<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>, PrivilegeState>();
+            }
+            else
+            {
+                if (privilegeGrantList.Contains(default))
+                {
+                    throw new NotSupportedException($"{nameof(privilegeGrantList)}: Default values for type {nameof(TGroupKey)} is not supported");
+                }
+                else if (privilegeGrantList.Distinct().Count() != privilegeGrantList.Count())
+                {
+                    throw new NotSupportedException($"{nameof(privilegeGrantList)}: Only distinct values are supported");
+                }
+                this.privilegeGrantList = privilegeGrantList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
+            }
+        }
 
         public void AddPrivilege(TPrivilegeKey privilegeId)
         {
