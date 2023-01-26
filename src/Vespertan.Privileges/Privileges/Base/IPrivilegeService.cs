@@ -35,5 +35,8 @@ namespace Vespertan.Privileges
 
         IPrivilegeContextService<TPrivilegeKey> GetUserContextService(TUserKey userId);
         IPrivilegeContextService<TPrivilegeKey> GetGroupContextService(TGroupKey groupId);
+
+        IEnumerable<TPrivilegeKey> GetUserPrivileges(TUserKey userId);
+        IEnumerable<TPrivilegeKey> GetGroupPrivileges(TGroupKey gruopId);
     }
 }

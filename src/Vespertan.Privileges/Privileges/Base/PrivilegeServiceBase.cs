@@ -221,6 +221,20 @@ namespace Vespertan.Privileges
             return list;
         }
 
+
+        public IEnumerable<TPrivilegeKey> GetGroupPrivileges(TGroupKey gruopId)
+        {
+            var list = new List<TPrivilegeKey>();
+            foreach (var privilege in GetPrivileges())
+            {
+                if (GetEvaluatedGrantForGroupOrDefault(privilege, gruopId))
+                {
+                    list.Add(privilege);
+                }
+            }
+            return list;
+        }
+
         public bool GetEvaluatedGrantForGroupOrDefault(TPrivilegeKey privilegeId, TGroupKey groupId)
         {
             return GetEvaluatedGrantForGroup(privilegeId, groupId) ?? DefaultGrantValue;
@@ -240,5 +254,6 @@ namespace Vespertan.Privileges
         {
             return new GroupContextService<TUserKey, TPrivilegeKey, TGroupKey>(groupId, this);
         }
+
     }
 }

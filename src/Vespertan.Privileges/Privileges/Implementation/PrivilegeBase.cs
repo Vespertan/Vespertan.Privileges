@@ -101,6 +101,20 @@ namespace Vespertan.Privileges
 
             return privilegeInfoAttributes;
         }
+
+        public static Dictionary<TEnum, PrivilegeInfoAttribute> GetPrivilegeInfoAttributeFromEnum<TEnum>() where TEnum : Enum
+        {
+            var privilegeInfoAttributes = new Dictionary<TEnum, PrivilegeInfoAttribute>();
+            var @enum = Activator.CreateInstance(typeof(TEnum));
+            foreach (var field in typeof(TEnum).GetFields())
+            {
+                var enumValue = field.GetValue(@enum);
+                    var privilegeInfoAttribute = (PrivilegeInfoAttribute)field.GetCustomAttributes(typeof(PrivilegeInfoAttribute), false).FirstOrDefault();
+                    privilegeInfoAttributes[(TEnum)enumValue] = privilegeInfoAttribute;
+            }
+
+            return privilegeInfoAttributes;
+        }
     }
 }
 
