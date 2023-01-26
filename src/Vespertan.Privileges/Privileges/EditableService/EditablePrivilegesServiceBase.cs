@@ -537,10 +537,10 @@ namespace Vespertan.Privileges
                     if (privilegeGrantList.ContainsKey(invertedPrivilegeGrant))
                     {
                         privilegeGrantList.Remove(invertedPrivilegeGrant);
-                        OnPrivilegeGrantRemove?.Invoke(this, invertedPrivilegeGrant);
+                        privilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
+                        OnPrivilegeGrantUpdate?.Invoke(this, privilegeGrant);
                     }
-
-                    if (!privilegeGrantList.ContainsKey(privilegeGrant))
+                    else if (!privilegeGrantList.ContainsKey(privilegeGrant))
                     {
                         privilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
                         OnPrivilegeGrantAdd?.Invoke(this, privilegeGrant);
@@ -611,10 +611,10 @@ namespace Vespertan.Privileges
                     if (privilegeGrantList.ContainsKey(invertedPrivilegeGrant))
                     {
                         privilegeGrantList.Remove(invertedPrivilegeGrant);
-                        OnPrivilegeGrantRemove?.Invoke(this, invertedPrivilegeGrant);
+                        privilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
+                        OnPrivilegeGrantUpdate?.Invoke(this, privilegeGrant);
                     }
-
-                    if (!privilegeGrantList.ContainsKey(privilegeGrant))
+                    else if (!privilegeGrantList.ContainsKey(privilegeGrant))
                     {
                         privilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
                         OnPrivilegeGrantAdd?.Invoke(this, privilegeGrant);
