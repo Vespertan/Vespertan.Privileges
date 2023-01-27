@@ -5,105 +5,21 @@ using Vespertan.Utils.Data;
 
 namespace Vespertan.Privileges
 {
-    public class EditablePrivilegesServiceBase<TUserKey, TPrivilegeKey, TGroupKey>
+    public abstract class EditablePrivilegesServiceBase<TUserKey, TPrivilegeKey, TGroupKey>
         : PrivilegeServiceBase<TUserKey, TPrivilegeKey, TGroupKey>, IEditablePrivilegesService<TUserKey, TPrivilegeKey, TGroupKey>
     {
-        public EditablePrivilegesServiceBase(IEnumerable<TPrivilegeKey> privilegeList = null, IEnumerable<TUserKey> userList = null, IEnumerable<TGroupKey> groupList = null,
-            IEnumerable<PrivilegeRelation<TUserKey, TGroupKey>> privilegeRelationList = null,
-            IEnumerable<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>> privilegeGrantList = null)
-        {
-            if (privilegeList == null)
-            {
-                this.privilegeList = new Dictionary<TPrivilegeKey, PrivilegeState>();
-            }
-            else
-            {
-                if (privilegeList.Contains(default))
-                {
-                    throw new NotSupportedException($"{nameof(privilegeList)}: Default values for type {nameof(TPrivilegeKey)} is not supported");
-                }
-                else if (privilegeList.Distinct().Count() != privilegeList.Count())
-                {
-                    throw new NotSupportedException($"{nameof(privilegeList)}: Only distinct values are supported");
-                }
-                this.privilegeList = privilegeList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
-            }
-
-            if (userList == null)
-            {
-                this.userList = new Dictionary<TUserKey, PrivilegeState>();
-            }
-            else
-            {
-                if (userList.Contains(default))
-                {
-                    throw new NotSupportedException($"{nameof(userList)}: Default values for type {nameof(TUserKey)} is not supported");
-                }
-                else if (userList.Distinct().Count() != userList.Count())
-                {
-                    throw new NotSupportedException($"{nameof(userList)}: Only distinct values are supported");
-                }
-                this.userList = userList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
-            }
-
-            if (groupList == null)
-            {
-                this.groupList = new Dictionary<TGroupKey, PrivilegeState>();
-            }
-            else
-            {
-                if (groupList.Contains(default))
-                {
-                    throw new NotSupportedException($"{nameof(groupList)}: Default values for type {nameof(TGroupKey)} is not supported");
-                }
-                else if (groupList.Distinct().Count() != groupList.Count())
-                {
-                    throw new NotSupportedException($"{nameof(groupList)}: Only distinct values are supported");
-                }
-                this.groupList = groupList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
-            }
-
-            if (privilegeRelationList == null)
-            {
-                this.privilegeRelationList = new Dictionary<PrivilegeRelation<TUserKey, TGroupKey>, PrivilegeState>();
-            }
-            else
-            {
-                if (privilegeRelationList.Contains(default))
-                {
-                    throw new NotSupportedException($"{nameof(privilegeRelationList)}: Default values for type {nameof(TGroupKey)} is not supported");
-                }
-                else if (privilegeRelationList.Distinct().Count() != privilegeRelationList.Count())
-                {
-                    throw new NotSupportedException($"{nameof(privilegeRelationList)}: Only distinct values are supported");
-                }
-                this.privilegeRelationList = privilegeRelationList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
-            }
-
-            if (privilegeGrantList == null)
-            {
-                this.privilegeGrantList = new Dictionary<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>, PrivilegeState>();
-            }
-            else
-            {
-                if (privilegeGrantList.Contains(default))
-                {
-                    throw new NotSupportedException($"{nameof(privilegeGrantList)}: Default values for type {nameof(TGroupKey)} is not supported");
-                }
-                else if (privilegeGrantList.Distinct().Count() != privilegeGrantList.Count())
-                {
-                    throw new NotSupportedException($"{nameof(privilegeGrantList)}: Only distinct values are supported");
-                }
-                this.privilegeGrantList = privilegeGrantList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
-            }
-        }
-
         private bool session = false;
         private Dictionary<TPrivilegeKey, PrivilegeState> privilegeList;
+        private Dictionary<TPrivilegeKey, PrivilegeState> PrivilegeList { get => privilegeList ??= InitPrivilegeList(); }
         private Dictionary<TUserKey, PrivilegeState> userList;
+        private Dictionary<TUserKey, PrivilegeState> UserList { get => userList ??= InitUserList(); }
         private Dictionary<TGroupKey, PrivilegeState> groupList;
+        private Dictionary<TGroupKey, PrivilegeState> GroupList { get => groupList ??= InitGroupList(); }
         private Dictionary<PrivilegeRelation<TUserKey, TGroupKey>, PrivilegeState> privilegeRelationList;
+        private Dictionary<PrivilegeRelation<TUserKey, TGroupKey>, PrivilegeState> PrivilegeRelationList { get => privilegeRelationList ??= InitPrivilegeRelationList(); }
         private Dictionary<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>, PrivilegeState> privilegeGrantList;
+        private Dictionary<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>, PrivilegeState> PrivilegeGrantList { get => privilegeGrantList ??= InitPrivilegeGrantList(); }
+
 
         public event EventHandler<TPrivilegeKey> OnPrivilegeAdd;
         public event EventHandler<TPrivilegeKey> OnPrivilegeRemove;
@@ -124,109 +40,85 @@ namespace Vespertan.Privileges
         public event EventHandler OnCommitSession;
         public event EventHandler OnRollbackSession;
 
-        public void Reset()
+        private Dictionary<TPrivilegeKey, PrivilegeState> InitPrivilegeList()
         {
             var privilegeList = GetPrivileges();
-            var userList = GetUsers();
-            var groupList = GetGroups();
-            var privilegeRelationList = GetPrivilegeRelations();
-            var privilegeGrantList = GetPrivilegeGrants();
-
-            if (privilegeList == null)
+            if (privilegeList.Contains(default))
             {
-                this.privilegeList = new Dictionary<TPrivilegeKey, PrivilegeState>();
+                throw new NotSupportedException($"{nameof(privilegeList)}: Default values for type {nameof(TPrivilegeKey)} is not supported");
             }
-            else
+            else if (privilegeList.Distinct().Count() != privilegeList.Count())
             {
-                if (privilegeList.Contains(default))
-                {
-                    throw new NotSupportedException($"{nameof(privilegeList)}: Default values for type {nameof(TPrivilegeKey)} is not supported");
-                }
-                else if (privilegeList.Distinct().Count() != privilegeList.Count())
-                {
-                    throw new NotSupportedException($"{nameof(privilegeList)}: Only distinct values are supported");
-                }
-                this.privilegeList = privilegeList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
+                throw new NotSupportedException($"{nameof(PrivilegeList)}: Only distinct values are supported");
             }
-
-            if (userList == null)
-            {
-                this.userList = new Dictionary<TUserKey, PrivilegeState>();
-            }
-            else
-            {
-                if (userList.Contains(default))
-                {
-                    throw new NotSupportedException($"{nameof(userList)}: Default values for type {nameof(TUserKey)} is not supported");
-                }
-                else if (userList.Distinct().Count() != userList.Count())
-                {
-                    throw new NotSupportedException($"{nameof(userList)}: Only distinct values are supported");
-                }
-                this.userList = userList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
-            }
-
-            if (groupList == null)
-            {
-                this.groupList = new Dictionary<TGroupKey, PrivilegeState>();
-            }
-            else
-            {
-                if (groupList.Contains(default))
-                {
-                    throw new NotSupportedException($"{nameof(groupList)}: Default values for type {nameof(TGroupKey)} is not supported");
-                }
-                else if (groupList.Distinct().Count() != groupList.Count())
-                {
-                    throw new NotSupportedException($"{nameof(groupList)}: Only distinct values are supported");
-                }
-                this.groupList = groupList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
-            }
-
-            if (privilegeRelationList == null)
-            {
-                this.privilegeRelationList = new Dictionary<PrivilegeRelation<TUserKey, TGroupKey>, PrivilegeState>();
-            }
-            else
-            {
-                if (privilegeRelationList.Contains(default))
-                {
-                    throw new NotSupportedException($"{nameof(privilegeRelationList)}: Default values for type {nameof(TGroupKey)} is not supported");
-                }
-                else if (privilegeRelationList.Distinct().Count() != privilegeRelationList.Count())
-                {
-                    throw new NotSupportedException($"{nameof(privilegeRelationList)}: Only distinct values are supported");
-                }
-                this.privilegeRelationList = privilegeRelationList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
-            }
-
-            if (privilegeGrantList == null)
-            {
-                this.privilegeGrantList = new Dictionary<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>, PrivilegeState>();
-            }
-            else
-            {
-                if (privilegeGrantList.Contains(default))
-                {
-                    throw new NotSupportedException($"{nameof(privilegeGrantList)}: Default values for type {nameof(TGroupKey)} is not supported");
-                }
-                else if (privilegeGrantList.Distinct().Count() != privilegeGrantList.Count())
-                {
-                    throw new NotSupportedException($"{nameof(privilegeGrantList)}: Only distinct values are supported");
-                }
-                this.privilegeGrantList = privilegeGrantList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
-            }
+            return privilegeList.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
         }
+        private Dictionary<TUserKey, PrivilegeState> InitUserList()
+        {
+            var userList = GetUsers();
+            if (userList.Contains(default))
+            {
+                throw new NotSupportedException($"{nameof(userList)}: Default values for type {nameof(TUserKey)} is not supported");
+            }
+            else if (userList.Distinct().Count() != userList.Count())
+            {
+                throw new NotSupportedException($"{nameof(userList)}: Only distinct values are supported");
+            }
+            return userList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
+        }
+
+        private Dictionary<TGroupKey, PrivilegeState> InitGroupList()
+        {
+            var groupList = GetGroups();
+            if (groupList.Contains(default))
+            {
+                throw new NotSupportedException($"{nameof(groupList)}: Default values for type {nameof(TGroupKey)} is not supported");
+            }
+            else if (groupList.Distinct().Count() != groupList.Count())
+            {
+                throw new NotSupportedException($"{nameof(groupList)}: Only distinct values are supported");
+            }
+            return groupList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
+        }
+
+        private Dictionary<PrivilegeRelation<TUserKey, TGroupKey>, PrivilegeState> InitPrivilegeRelationList()
+        {
+            var privilegeRelationList = GetPrivilegeRelations();
+            if (privilegeRelationList.Contains(default))
+            {
+                throw new NotSupportedException($"{nameof(privilegeRelationList)}: Default values for type {nameof(TGroupKey)} is not supported");
+            }
+            else if (privilegeRelationList.Distinct().Count() != privilegeRelationList.Count())
+            {
+                throw new NotSupportedException($"{nameof(privilegeRelationList)}: Only distinct values are supported");
+            }
+            return privilegeRelationList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
+        }
+
+        private Dictionary<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>, PrivilegeState> InitPrivilegeGrantList()
+        {
+            var privilegeGrantList = GetPrivilegeGrants();
+            if (privilegeGrantList.Contains(default))
+            {
+                throw new NotSupportedException($"{nameof(privilegeGrantList)}: Default values for type {nameof(TGroupKey)} is not supported");
+            }
+            else if (privilegeGrantList.Distinct().Count() != privilegeGrantList.Count())
+            {
+                throw new NotSupportedException($"{nameof(privilegeGrantList)}: Only distinct values are supported");
+            }
+            return privilegeGrantList?.ToDictionary(p => p, p => PrivilegeState.Unmodifed);
+        }
+
 
         public void AddPrivilege(TPrivilegeKey privilegeId)
         {
             if (session)
             {
-                if (privilegeList.ContainsKey(privilegeId))
+                if (PrivilegeList.ContainsKey(privilegeId))
                 {
-                    if (privilegeList[privilegeId] == PrivilegeState.Removed)
+                    if (PrivilegeList[privilegeId] == PrivilegeState.Removed)
                     {
-                        privilegeList[privilegeId] = PrivilegeState.Unmodifed;
+                        PrivilegeList[privilegeId] = PrivilegeState.Unmodifed;
                     }
                     else
                     {
@@ -235,18 +127,18 @@ namespace Vespertan.Privileges
                 }
                 else
                 {
-                    privilegeList[privilegeId] = PrivilegeState.Added;
+                    PrivilegeList[privilegeId] = PrivilegeState.Added;
                 }
             }
             else
             {
-                if (privilegeList.ContainsKey(privilegeId))
+                if (PrivilegeList.ContainsKey(privilegeId))
                 {
                     throw new InvalidOperationException($"Privilege with Id {privilegeId} already exists.");
                 }
                 else
                 {
-                    privilegeList[privilegeId] = PrivilegeState.Unmodifed;
+                    PrivilegeList[privilegeId] = PrivilegeState.Unmodifed;
                     OnPrivilegeAdd?.Invoke(this, privilegeId);
                 }
             }
@@ -256,16 +148,16 @@ namespace Vespertan.Privileges
         {
             if (session)
             {
-                if (privilegeList.ContainsKey(privilegeId))
+                if (PrivilegeList.ContainsKey(privilegeId))
                 {
-                    privilegeList[privilegeId] = PrivilegeState.Removed;
+                    PrivilegeList[privilegeId] = PrivilegeState.Removed;
                 }
             }
             else
             {
-                if (privilegeList.ContainsKey(privilegeId))
+                if (PrivilegeList.ContainsKey(privilegeId))
                 {
-                    privilegeList.Remove(privilegeId);
+                    PrivilegeList.Remove(privilegeId);
                     OnPrivilegeRemove?.Invoke(this, privilegeId);
                 }
             }
@@ -275,11 +167,11 @@ namespace Vespertan.Privileges
         {
             if (session)
             {
-                if (userList.ContainsKey(userId))
+                if (UserList.ContainsKey(userId))
                 {
-                    if (userList[userId] == PrivilegeState.Removed)
+                    if (UserList[userId] == PrivilegeState.Removed)
                     {
-                        userList[userId] = PrivilegeState.Unmodifed;
+                        UserList[userId] = PrivilegeState.Unmodifed;
                     }
                     else
                     {
@@ -288,18 +180,18 @@ namespace Vespertan.Privileges
                 }
                 else
                 {
-                    userList[userId] = PrivilegeState.Added;
+                    UserList[userId] = PrivilegeState.Added;
                 }
             }
             else
             {
-                if (userList.ContainsKey(userId))
+                if (UserList.ContainsKey(userId))
                 {
                     throw new InvalidOperationException($"User with Id {userId} already exists.");
                 }
                 else
                 {
-                    userList[userId] = PrivilegeState.Unmodifed;
+                    UserList[userId] = PrivilegeState.Unmodifed;
                     OnUserAdd?.Invoke(this, userId);
                 }
             }
@@ -309,16 +201,16 @@ namespace Vespertan.Privileges
         {
             if (session)
             {
-                if (userList.ContainsKey(userId))
+                if (UserList.ContainsKey(userId))
                 {
-                    userList[userId] = PrivilegeState.Removed;
+                    UserList[userId] = PrivilegeState.Removed;
                 }
             }
             else
             {
-                if (userList.ContainsKey(userId))
+                if (UserList.ContainsKey(userId))
                 {
-                    userList.Remove(userId);
+                    UserList.Remove(userId);
                     OnUserRemove?.Invoke(this, userId);
                 }
             }
@@ -328,11 +220,11 @@ namespace Vespertan.Privileges
         {
             if (session)
             {
-                if (groupList.ContainsKey(groupId))
+                if (GroupList.ContainsKey(groupId))
                 {
-                    if (groupList[groupId] == PrivilegeState.Removed)
+                    if (GroupList[groupId] == PrivilegeState.Removed)
                     {
-                        groupList[groupId] = PrivilegeState.Unmodifed;
+                        GroupList[groupId] = PrivilegeState.Unmodifed;
                     }
                     else
                     {
@@ -341,18 +233,18 @@ namespace Vespertan.Privileges
                 }
                 else
                 {
-                    groupList[groupId] = PrivilegeState.Added;
+                    GroupList[groupId] = PrivilegeState.Added;
                 }
             }
             else
             {
-                if (groupList.ContainsKey(groupId))
+                if (GroupList.ContainsKey(groupId))
                 {
                     throw new InvalidOperationException($"Group with Id {groupId} already exists.");
                 }
                 else
                 {
-                    groupList[groupId] = PrivilegeState.Unmodifed;
+                    GroupList[groupId] = PrivilegeState.Unmodifed;
                     OnGroupAdd?.Invoke(this, groupId);
                 }
             }
@@ -362,16 +254,16 @@ namespace Vespertan.Privileges
         {
             if (session)
             {
-                if (groupList.ContainsKey(groupId))
+                if (GroupList.ContainsKey(groupId))
                 {
-                    groupList[groupId] = PrivilegeState.Removed;
+                    GroupList[groupId] = PrivilegeState.Removed;
                 }
             }
             else
             {
-                if (groupList.ContainsKey(groupId))
+                if (GroupList.ContainsKey(groupId))
                 {
-                    groupList.Remove(groupId);
+                    GroupList.Remove(groupId);
                     OnGroupRemove?.Invoke(this, groupId);
                 }
             }
@@ -382,23 +274,23 @@ namespace Vespertan.Privileges
             var privilegeRelation = new PrivilegeRelation<TUserKey, TGroupKey>(groupId, userId);
             if (session)
             {
-                if (privilegeRelationList.ContainsKey(privilegeRelation))
+                if (PrivilegeRelationList.ContainsKey(privilegeRelation))
                 {
-                    if (privilegeRelationList[privilegeRelation] == PrivilegeState.Removed)
+                    if (PrivilegeRelationList[privilegeRelation] == PrivilegeState.Removed)
                     {
-                        privilegeRelationList[privilegeRelation] = PrivilegeState.Unmodifed;
+                        PrivilegeRelationList[privilegeRelation] = PrivilegeState.Unmodifed;
                     }
                 }
                 else
                 {
-                    privilegeRelationList[privilegeRelation] = PrivilegeState.Added;
+                    PrivilegeRelationList[privilegeRelation] = PrivilegeState.Added;
                 }
             }
             else
             {
-                if (!privilegeRelationList.ContainsKey(privilegeRelation))
+                if (!PrivilegeRelationList.ContainsKey(privilegeRelation))
                 {
-                    privilegeRelationList[privilegeRelation] = PrivilegeState.Unmodifed;
+                    PrivilegeRelationList[privilegeRelation] = PrivilegeState.Unmodifed;
                     OnPrivilegeRelationAdd?.Invoke(this, privilegeRelation);
                 }
 
@@ -421,23 +313,23 @@ namespace Vespertan.Privileges
             var privilegeRelation = new PrivilegeRelation<TUserKey, TGroupKey>(groupId, subGroupId);
             if (session)
             {
-                if (privilegeRelationList.ContainsKey(privilegeRelation))
+                if (PrivilegeRelationList.ContainsKey(privilegeRelation))
                 {
-                    if (privilegeRelationList[privilegeRelation] == PrivilegeState.Removed)
+                    if (PrivilegeRelationList[privilegeRelation] == PrivilegeState.Removed)
                     {
-                        privilegeRelationList[privilegeRelation] = PrivilegeState.Unmodifed;
+                        PrivilegeRelationList[privilegeRelation] = PrivilegeState.Unmodifed;
                     }
                 }
                 else
                 {
-                    privilegeRelationList[privilegeRelation] = PrivilegeState.Added;
+                    PrivilegeRelationList[privilegeRelation] = PrivilegeState.Added;
                 }
             }
             else
             {
-                if (!privilegeRelationList.ContainsKey(privilegeRelation))
+                if (!PrivilegeRelationList.ContainsKey(privilegeRelation))
                 {
-                    privilegeRelationList[privilegeRelation] = PrivilegeState.Unmodifed;
+                    PrivilegeRelationList[privilegeRelation] = PrivilegeState.Unmodifed;
                     OnPrivilegeRelationAdd?.Invoke(this, privilegeRelation);
                 }
 
@@ -449,23 +341,23 @@ namespace Vespertan.Privileges
             var privilegeRelation = new PrivilegeRelation<TUserKey, TGroupKey>(groupId, subGroupId);
             if (session)
             {
-                if (privilegeRelationList.ContainsKey(privilegeRelation))
+                if (PrivilegeRelationList.ContainsKey(privilegeRelation))
                 {
-                    if (privilegeRelationList[privilegeRelation] == PrivilegeState.Added)
+                    if (PrivilegeRelationList[privilegeRelation] == PrivilegeState.Added)
                     {
-                        privilegeRelationList.Remove(privilegeRelation);
+                        PrivilegeRelationList.Remove(privilegeRelation);
                     }
                 }
                 else
                 {
-                    privilegeRelationList[privilegeRelation] = PrivilegeState.Removed;
+                    PrivilegeRelationList[privilegeRelation] = PrivilegeState.Removed;
                 }
             }
             else
             {
-                if (privilegeRelationList.ContainsKey(privilegeRelation))
+                if (PrivilegeRelationList.ContainsKey(privilegeRelation))
                 {
-                    privilegeRelationList.Remove(privilegeRelation);
+                    PrivilegeRelationList.Remove(privilegeRelation);
                     OnPrivilegeRelationRemove?.Invoke(this, privilegeRelation);
                 }
 
@@ -477,23 +369,23 @@ namespace Vespertan.Privileges
             var privilegeRelation = new PrivilegeRelation<TUserKey, TGroupKey>(groupId, userId);
             if (session)
             {
-                if (privilegeRelationList.ContainsKey(privilegeRelation))
+                if (PrivilegeRelationList.ContainsKey(privilegeRelation))
                 {
-                    if (privilegeRelationList[privilegeRelation] == PrivilegeState.Added)
+                    if (PrivilegeRelationList[privilegeRelation] == PrivilegeState.Added)
                     {
-                        privilegeRelationList.Remove(privilegeRelation);
+                        PrivilegeRelationList.Remove(privilegeRelation);
                     }
                 }
                 else
                 {
-                    privilegeRelationList[privilegeRelation] = PrivilegeState.Removed;
+                    PrivilegeRelationList[privilegeRelation] = PrivilegeState.Removed;
                 }
             }
             else
             {
-                if (privilegeRelationList.ContainsKey(privilegeRelation))
+                if (PrivilegeRelationList.ContainsKey(privilegeRelation))
                 {
-                    privilegeRelationList.Remove(privilegeRelation);
+                    PrivilegeRelationList.Remove(privilegeRelation);
                     OnPrivilegeRelationRemove?.Invoke(this, privilegeRelation);
                 }
 
@@ -508,41 +400,41 @@ namespace Vespertan.Privileges
                 var invertedPrivilegeGrant = new PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>(privilegeId, userId, !grant.Value);
                 if (session)
                 {
-                    if (privilegeGrantList.ContainsKey(invertedPrivilegeGrant))
+                    if (PrivilegeGrantList.ContainsKey(invertedPrivilegeGrant))
                     {
-                        if (privilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Added)
+                        if (PrivilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Added)
                         {
-                            privilegeGrantList.Remove(invertedPrivilegeGrant);
+                            PrivilegeGrantList.Remove(invertedPrivilegeGrant);
                         }
-                        else if (privilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Unmodifed)
+                        else if (PrivilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Unmodifed)
                         {
-                            privilegeGrantList[invertedPrivilegeGrant] = PrivilegeState.Removed;
+                            PrivilegeGrantList[invertedPrivilegeGrant] = PrivilegeState.Removed;
                         }
                     }
 
-                    if (privilegeGrantList.ContainsKey(privilegeGrant))
+                    if (PrivilegeGrantList.ContainsKey(privilegeGrant))
                     {
-                        if (privilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Removed)
+                        if (PrivilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Removed)
                         {
-                            privilegeGrantList[invertedPrivilegeGrant] = PrivilegeState.Unmodifed;
+                            PrivilegeGrantList[invertedPrivilegeGrant] = PrivilegeState.Unmodifed;
                         }
                     }
                     else
                     {
-                        privilegeGrantList[privilegeGrant] = PrivilegeState.Added;
+                        PrivilegeGrantList[privilegeGrant] = PrivilegeState.Added;
                     }
                 }
                 else
                 {
-                    if (privilegeGrantList.ContainsKey(invertedPrivilegeGrant))
+                    if (PrivilegeGrantList.ContainsKey(invertedPrivilegeGrant))
                     {
-                        privilegeGrantList.Remove(invertedPrivilegeGrant);
-                        privilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
+                        PrivilegeGrantList.Remove(invertedPrivilegeGrant);
+                        PrivilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
                         OnPrivilegeGrantUpdate?.Invoke(this, privilegeGrant);
                     }
-                    else if (!privilegeGrantList.ContainsKey(privilegeGrant))
+                    else if (!PrivilegeGrantList.ContainsKey(privilegeGrant))
                     {
-                        privilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
+                        PrivilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
                         OnPrivilegeGrantAdd?.Invoke(this, privilegeGrant);
                     }
                 }
@@ -551,23 +443,23 @@ namespace Vespertan.Privileges
             {
                 if (session)
                 {
-                    foreach (var privilageStatus in privilegeGrantList.Keys.Where(p => Equals(p.UserId, userId) && Equals(p.PrivilegeId, privilegeId)).ToList())
+                    foreach (var privilageStatus in PrivilegeGrantList.Keys.Where(p => Equals(p.UserId, userId) && Equals(p.PrivilegeId, privilegeId)).ToList())
                     {
-                        if (privilegeGrantList[privilageStatus] == PrivilegeState.Added)
+                        if (PrivilegeGrantList[privilageStatus] == PrivilegeState.Added)
                         {
-                            privilegeGrantList.Remove(privilageStatus);
+                            PrivilegeGrantList.Remove(privilageStatus);
                         }
-                        else if (privilegeGrantList[privilageStatus] == PrivilegeState.Unmodifed)
+                        else if (PrivilegeGrantList[privilageStatus] == PrivilegeState.Unmodifed)
                         {
-                            privilegeGrantList[privilageStatus] = PrivilegeState.Removed;
+                            PrivilegeGrantList[privilageStatus] = PrivilegeState.Removed;
                         }
                     }
                 }
                 else
                 {
-                    foreach (var privilageStatus in privilegeGrantList.Keys.Where(p => Equals(p.UserId, userId) && Equals(p.PrivilegeId, privilegeId)).ToList())
+                    foreach (var privilageStatus in PrivilegeGrantList.Keys.Where(p => Equals(p.UserId, userId) && Equals(p.PrivilegeId, privilegeId)).ToList())
                     {
-                        privilegeGrantList.Remove(privilageStatus);
+                        PrivilegeGrantList.Remove(privilageStatus);
                         OnPrivilegeGrantRemove?.Invoke(this, privilageStatus);
                     }
                 }
@@ -582,41 +474,41 @@ namespace Vespertan.Privileges
                 var invertedPrivilegeGrant = new PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>(privilegeId, groupId, !grant.Value);
                 if (session)
                 {
-                    if (privilegeGrantList.ContainsKey(invertedPrivilegeGrant))
+                    if (PrivilegeGrantList.ContainsKey(invertedPrivilegeGrant))
                     {
-                        if (privilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Added)
+                        if (PrivilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Added)
                         {
-                            privilegeGrantList.Remove(invertedPrivilegeGrant);
+                            PrivilegeGrantList.Remove(invertedPrivilegeGrant);
                         }
-                        else if (privilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Unmodifed)
+                        else if (PrivilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Unmodifed)
                         {
-                            privilegeGrantList[invertedPrivilegeGrant] = PrivilegeState.Removed;
+                            PrivilegeGrantList[invertedPrivilegeGrant] = PrivilegeState.Removed;
                         }
                     }
 
-                    if (privilegeGrantList.ContainsKey(privilegeGrant))
+                    if (PrivilegeGrantList.ContainsKey(privilegeGrant))
                     {
-                        if (privilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Removed)
+                        if (PrivilegeGrantList[invertedPrivilegeGrant] == PrivilegeState.Removed)
                         {
-                            privilegeGrantList[invertedPrivilegeGrant] = PrivilegeState.Unmodifed;
+                            PrivilegeGrantList[invertedPrivilegeGrant] = PrivilegeState.Unmodifed;
                         }
                     }
                     else
                     {
-                        privilegeGrantList[privilegeGrant] = PrivilegeState.Added;
+                        PrivilegeGrantList[privilegeGrant] = PrivilegeState.Added;
                     }
                 }
                 else
                 {
-                    if (privilegeGrantList.ContainsKey(invertedPrivilegeGrant))
+                    if (PrivilegeGrantList.ContainsKey(invertedPrivilegeGrant))
                     {
-                        privilegeGrantList.Remove(invertedPrivilegeGrant);
-                        privilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
+                        PrivilegeGrantList.Remove(invertedPrivilegeGrant);
+                        PrivilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
                         OnPrivilegeGrantUpdate?.Invoke(this, privilegeGrant);
                     }
-                    else if (!privilegeGrantList.ContainsKey(privilegeGrant))
+                    else if (!PrivilegeGrantList.ContainsKey(privilegeGrant))
                     {
-                        privilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
+                        PrivilegeGrantList[privilegeGrant] = PrivilegeState.Unmodifed;
                         OnPrivilegeGrantAdd?.Invoke(this, privilegeGrant);
                     }
                 }
@@ -625,23 +517,23 @@ namespace Vespertan.Privileges
             {
                 if (session)
                 {
-                    foreach (var privilageStatus in privilegeGrantList.Keys.Where(p => Equals(p.GroupId, groupId) && Equals(p.PrivilegeId, privilegeId)).ToList())
+                    foreach (var privilageStatus in PrivilegeGrantList.Keys.Where(p => Equals(p.GroupId, groupId) && Equals(p.PrivilegeId, privilegeId)).ToList())
                     {
-                        if (privilegeGrantList[privilageStatus] == PrivilegeState.Added)
+                        if (PrivilegeGrantList[privilageStatus] == PrivilegeState.Added)
                         {
-                            privilegeGrantList.Remove(privilageStatus);
+                            PrivilegeGrantList.Remove(privilageStatus);
                         }
-                        else if (privilegeGrantList[privilageStatus] == PrivilegeState.Unmodifed)
+                        else if (PrivilegeGrantList[privilageStatus] == PrivilegeState.Unmodifed)
                         {
-                            privilegeGrantList[privilageStatus] = PrivilegeState.Removed;
+                            PrivilegeGrantList[privilageStatus] = PrivilegeState.Removed;
                         }
                     }
                 }
                 else
                 {
-                    foreach (var privilageStatus in privilegeGrantList.Keys.Where(p => Equals(p.GroupId, groupId) && Equals(p.PrivilegeId, privilegeId)).ToList())
+                    foreach (var privilageStatus in PrivilegeGrantList.Keys.Where(p => Equals(p.GroupId, groupId) && Equals(p.PrivilegeId, privilegeId)).ToList())
                     {
-                        privilegeGrantList.Remove(privilageStatus);
+                        PrivilegeGrantList.Remove(privilageStatus);
                         OnPrivilegeGrantRemove?.Invoke(this, privilageStatus);
                     }
                 }
@@ -662,62 +554,62 @@ namespace Vespertan.Privileges
         {
             foreach (var item in GetPrivilegeGrantsChanges().Where(p => p.Value == PrivilegeState.Removed))
             {
-                privilegeGrantList.Remove(item.Key);
+                PrivilegeGrantList.Remove(item.Key);
                 OnPrivilegeGrantRemove?.Invoke(this, item.Key);
             }
 
             foreach (var item in GetRelationsChanges().Where(p => p.Value == PrivilegeState.Removed))
             {
-                privilegeRelationList.Remove(item.Key);
+                PrivilegeRelationList.Remove(item.Key);
                 OnPrivilegeRelationRemove?.Invoke(this, item.Key);
             }
 
             foreach (var item in GetGroupsChanges().Where(p => p.Value == PrivilegeState.Removed))
             {
-                groupList.Remove(item.Key);
+                GroupList.Remove(item.Key);
                 OnGroupRemove?.Invoke(this, item.Key);
             }
 
             foreach (var item in GetUsersChanges().Where(p => p.Value == PrivilegeState.Removed))
             {
-                userList.Remove(item.Key);
+                UserList.Remove(item.Key);
                 OnUserRemove?.Invoke(this, item.Key);
             }
 
             foreach (var item in GetPrivilegesChanges().Where(p => p.Value == PrivilegeState.Removed))
             {
-                privilegeList.Remove(item.Key);
+                PrivilegeList.Remove(item.Key);
                 OnPrivilegeRemove?.Invoke(this, item.Key);
             }
 
 
             foreach (var item in GetPrivilegesChanges().Where(p => p.Value == PrivilegeState.Added))
             {
-                privilegeList[item.Key] = PrivilegeState.Unmodifed;
+                PrivilegeList[item.Key] = PrivilegeState.Unmodifed;
                 OnPrivilegeAdd?.Invoke(this, item.Key);
             }
 
             foreach (var item in GetUsersChanges().Where(p => p.Value == PrivilegeState.Added))
             {
-                userList[item.Key] = PrivilegeState.Unmodifed;
+                UserList[item.Key] = PrivilegeState.Unmodifed;
                 OnUserAdd?.Invoke(this, item.Key);
             }
 
             foreach (var item in GetGroupsChanges().Where(p => p.Value == PrivilegeState.Added))
             {
-                groupList[item.Key] = PrivilegeState.Unmodifed;
+                GroupList[item.Key] = PrivilegeState.Unmodifed;
                 OnGroupAdd?.Invoke(this, item.Key);
             }
 
             foreach (var item in GetRelationsChanges().Where(p => p.Value == PrivilegeState.Added))
             {
-                privilegeRelationList[item.Key] = PrivilegeState.Unmodifed;
+                PrivilegeRelationList[item.Key] = PrivilegeState.Unmodifed;
                 OnPrivilegeRelationAdd?.Invoke(this, item.Key);
             }
 
             foreach (var item in GetPrivilegeGrantsChanges().Where(p => p.Value == PrivilegeState.Added))
             {
-                privilegeGrantList[item.Key] = PrivilegeState.Unmodifed;
+                PrivilegeGrantList[item.Key] = PrivilegeState.Unmodifed;
                 OnPrivilegeGrantAdd?.Invoke(this, item.Key);
             }
 
@@ -732,8 +624,8 @@ namespace Vespertan.Privileges
                     Grant = !item.Key.Grant
                 };
 
-                privilegeGrantList[item.Key] = PrivilegeState.Unmodifed;
-                privilegeGrantList.Remove(invertedPrivilegeGrant);
+                PrivilegeGrantList[item.Key] = PrivilegeState.Unmodifed;
+                PrivilegeGrantList.Remove(invertedPrivilegeGrant);
                 OnPrivilegeGrantUpdate?.Invoke(this, item.Key);
             }
 
@@ -744,63 +636,63 @@ namespace Vespertan.Privileges
 
         public void RollbackSession()
         {
-            foreach (var privilegeKeyValuePair in privilegeList.Where(p => p.Value != PrivilegeState.Unmodifed))
+            foreach (var privilegeKeyValuePair in PrivilegeList.Where(p => p.Value != PrivilegeState.Unmodifed))
             {
                 if (privilegeKeyValuePair.Value == PrivilegeState.Removed)
                 {
-                    privilegeList[privilegeKeyValuePair.Key] = PrivilegeState.Unmodifed;
+                    PrivilegeList[privilegeKeyValuePair.Key] = PrivilegeState.Unmodifed;
                 }
                 else if (privilegeKeyValuePair.Value == PrivilegeState.Added)
                 {
-                    privilegeList.Remove(privilegeKeyValuePair.Key);
+                    PrivilegeList.Remove(privilegeKeyValuePair.Key);
                 }
             }
 
-            foreach (var userKeyValuePair in userList.Where(p => p.Value != PrivilegeState.Unmodifed))
+            foreach (var userKeyValuePair in UserList.Where(p => p.Value != PrivilegeState.Unmodifed))
             {
                 if (userKeyValuePair.Value == PrivilegeState.Removed)
                 {
-                    userList[userKeyValuePair.Key] = PrivilegeState.Unmodifed;
+                    UserList[userKeyValuePair.Key] = PrivilegeState.Unmodifed;
                 }
                 else if (userKeyValuePair.Value == PrivilegeState.Added)
                 {
-                    userList.Remove(userKeyValuePair.Key);
+                    UserList.Remove(userKeyValuePair.Key);
                 }
             }
 
-            foreach (var groupKeyValuePair in groupList.Where(p => p.Value != PrivilegeState.Unmodifed))
+            foreach (var groupKeyValuePair in GroupList.Where(p => p.Value != PrivilegeState.Unmodifed))
             {
                 if (groupKeyValuePair.Value == PrivilegeState.Removed)
                 {
-                    groupList[groupKeyValuePair.Key] = PrivilegeState.Unmodifed;
+                    GroupList[groupKeyValuePair.Key] = PrivilegeState.Unmodifed;
                 }
                 else if (groupKeyValuePair.Value == PrivilegeState.Added)
                 {
-                    groupList.Remove(groupKeyValuePair.Key);
+                    GroupList.Remove(groupKeyValuePair.Key);
                 }
             }
 
-            foreach (var privilegeRelationKeyValuePair in privilegeRelationList.Where(p => p.Value != PrivilegeState.Unmodifed))
+            foreach (var privilegeRelationKeyValuePair in PrivilegeRelationList.Where(p => p.Value != PrivilegeState.Unmodifed))
             {
                 if (privilegeRelationKeyValuePair.Value == PrivilegeState.Removed)
                 {
-                    privilegeRelationList[privilegeRelationKeyValuePair.Key] = PrivilegeState.Unmodifed;
+                    PrivilegeRelationList[privilegeRelationKeyValuePair.Key] = PrivilegeState.Unmodifed;
                 }
                 else if (privilegeRelationKeyValuePair.Value == PrivilegeState.Added)
                 {
-                    privilegeRelationList.Remove(privilegeRelationKeyValuePair.Key);
+                    PrivilegeRelationList.Remove(privilegeRelationKeyValuePair.Key);
                 }
             }
 
-            foreach (var privilegeGrantKeyValuePair in privilegeGrantList.Where(p => p.Value != PrivilegeState.Unmodifed))
+            foreach (var privilegeGrantKeyValuePair in PrivilegeGrantList.Where(p => p.Value != PrivilegeState.Unmodifed))
             {
                 if (privilegeGrantKeyValuePair.Value == PrivilegeState.Removed)
                 {
-                    privilegeGrantList[privilegeGrantKeyValuePair.Key] = PrivilegeState.Unmodifed;
+                    PrivilegeGrantList[privilegeGrantKeyValuePair.Key] = PrivilegeState.Unmodifed;
                 }
                 else if (privilegeGrantKeyValuePair.Value == PrivilegeState.Added)
                 {
-                    privilegeGrantList.Remove(privilegeGrantKeyValuePair.Key);
+                    PrivilegeGrantList.Remove(privilegeGrantKeyValuePair.Key);
                 }
             }
 
@@ -811,7 +703,7 @@ namespace Vespertan.Privileges
         {
             if (session)
             {
-                return privilegeList.Where(p => p.Value != PrivilegeState.Unmodifed).ToDictionary(p => p.Key, p => p.Value);
+                return PrivilegeList.Where(p => p.Value != PrivilegeState.Unmodifed).ToDictionary(p => p.Key, p => p.Value);
             }
             else
             {
@@ -823,7 +715,7 @@ namespace Vespertan.Privileges
         {
             if (session)
             {
-                return groupList.Where(p => p.Value != PrivilegeState.Unmodifed).ToDictionary(p => p.Key, p => p.Value);
+                return GroupList.Where(p => p.Value != PrivilegeState.Unmodifed).ToDictionary(p => p.Key, p => p.Value);
             }
             else
             {
@@ -835,7 +727,7 @@ namespace Vespertan.Privileges
         {
             if (session)
             {
-                return userList.Where(p => p.Value != PrivilegeState.Unmodifed).ToDictionary(p => p.Key, p => p.Value);
+                return UserList.Where(p => p.Value != PrivilegeState.Unmodifed).ToDictionary(p => p.Key, p => p.Value);
             }
             else
             {
@@ -847,7 +739,7 @@ namespace Vespertan.Privileges
         {
             if (session)
             {
-                return privilegeRelationList.Where(p => p.Value != PrivilegeState.Unmodifed).ToDictionary(p => p.Key, p => p.Value);
+                return PrivilegeRelationList.Where(p => p.Value != PrivilegeState.Unmodifed).ToDictionary(p => p.Key, p => p.Value);
             }
             else
             {
@@ -859,63 +751,28 @@ namespace Vespertan.Privileges
         {
             if (session)
             {
-                var privilegeGrantListTemp = new Dictionary<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>, PrivilegeState>();
-                var privilegeGrantListGrouped = privilegeGrantList
+                var PrivilegeGrantListTemp = new Dictionary<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>, PrivilegeState>();
+                var PrivilegeGrantListGrouped = PrivilegeGrantList
                     .Where(p => p.Value != PrivilegeState.Unmodifed)
                     .GroupBy(p => new { p.Key.PrivilegeId, p.Key.UserId, p.Key.GroupId });
-                foreach (var privilegeGrantGr in privilegeGrantListGrouped)
+                foreach (var privilegeGrantGr in PrivilegeGrantListGrouped)
                 {
                     if (privilegeGrantGr.Count() == 1)
                     {
-                        privilegeGrantListTemp[privilegeGrantGr.First().Key] = privilegeGrantGr.First().Value;
+                        PrivilegeGrantListTemp[privilegeGrantGr.First().Key] = privilegeGrantGr.First().Value;
                     }
                     else
                     {
                         var newGrant = privilegeGrantGr.Where(p => p.Value == PrivilegeState.Added).First();
-                        privilegeGrantListTemp[newGrant.Key] = PrivilegeState.Updated;
+                        PrivilegeGrantListTemp[newGrant.Key] = PrivilegeState.Updated;
                     }
                 }
-                return privilegeGrantListTemp;
+                return PrivilegeGrantListTemp;
             }
             else
             {
                 return new Dictionary<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>, PrivilegeState>();
             }
-        }
-
-        public override IEnumerable<TPrivilegeKey> GetPrivileges()
-        {
-            return privilegeList
-                .Where(p => p.Value != PrivilegeState.Removed)
-                .Select(p => p.Key);
-        }
-
-        public override IEnumerable<TUserKey> GetUsers()
-        {
-            return userList
-                .Where(p => p.Value != PrivilegeState.Removed)
-                .Select(p => p.Key);
-        }
-
-        public override IEnumerable<TGroupKey> GetGroups()
-        {
-            return groupList
-                .Where(p => p.Value != PrivilegeState.Removed)
-                .Select(p => p.Key);
-        }
-
-        public override IEnumerable<PrivilegeGrant<TUserKey, TPrivilegeKey, TGroupKey>> GetPrivilegeGrants()
-        {
-            return privilegeGrantList
-                .Where(p => p.Value != PrivilegeState.Removed)
-                .Select(p => p.Key);
-        }
-
-        public override IEnumerable<PrivilegeRelation<TUserKey, TGroupKey>> GetPrivilegeRelations()
-        {
-            return privilegeRelationList
-                .Where(p => p.Value != PrivilegeState.Removed)
-                .Select(p => p.Key);
         }
     }
 }
