@@ -14,5 +14,6 @@ namespace Vespertan.Privileges
         public string DisplayName { get; set; }
         public string Description { get; set; }
         public string GroupName { get; set; }
+        public string AlternateName { get; set; }
     }
 }
